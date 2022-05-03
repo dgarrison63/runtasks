@@ -8,6 +8,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@koa/router": "^10.1.1",
     "axios": "^0.27.2",
     "json-query": "^2.2.2",
     "koa": "^2.13.4",
