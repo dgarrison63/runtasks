@@ -23,7 +23,7 @@ async function getPlanOutput(body, url, token) {
       console.log(`statusCode: ${res.status}`);
       // const myArray = res.data.resource_changes;
       const planArray = res.data;
-      console.log(res.data);
+      //      console.log(planArray);
       const queryResult = jsonQuery('resource_changes[type=bigip_as3].change', {
         data: planArray,
       }).value;
@@ -31,7 +31,7 @@ async function getPlanOutput(body, url, token) {
 
       if (queryResult == null) {
         console.log('RETURNING FAILED RESPONSE');
-        return Promise.all('failed');
+        return 'failed';
       }
       console.log('RETURNING PASSED RESPONSE');
 
@@ -80,7 +80,7 @@ async function postCallback(body, url, token, planStatus) {
     .patch(url, payload, config)
     .then((res) => {
       console.log(`statusCode: ${res.status}`);
-      console.log(res);
+      //    console.log(res);
     })
     .catch((error) => {
       console.error(error);
@@ -95,9 +95,8 @@ router.all('/', (ctx) => {
   const apiToken = body.access_token;
   const callbackURL = body.task_result_callback_url;
   // logRequest(ctx);
-  // const result = getPlanOutput(body, planOutputURL, apiToken).resolve().then((results) => console.log('THIS IS AFTER', results));
   const result = getPlanOutput(body, planOutputURL, apiToken);
-  console.log('THIS IS THE RESULT FROM PLAN OUTPUT...', Promise.resolve(result));
+  console.log('THIS IS THE RESULT FROM PLAN OUTPUT...', result);
   postCallback(body, callbackURL, apiToken, result);
 
   ctx.status = 200;
