@@ -35,7 +35,7 @@ async function getPlanOutput(body, url, token) {
       }
       console.log('RETURNING PASSED RESPONSE');
 
-      return true;
+      return 'passed';
       /*
       terraform_result = jsonQuery('after.as3json', {
         data: query_result,
