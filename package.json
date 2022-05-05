@@ -9,6 +9,7 @@
   "license": "ISC",
   "dependencies": {
     "@koa/router": "^10.1.1",
+    "ajv": "^8.11.0",
     "axios": "^0.27.2",
     "json-query": "^2.2.2",
     "koa": "^2.13.4",

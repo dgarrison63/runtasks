@@ -1,13 +1,20 @@
 // const https = require('https');
+
 // const http = require('http');
+
 const axios = require('axios');
-const jsonQuery = require('json-query');
+// const jsonQuery = require('json-query');
 const Koa = require('koa');
 const Router = require('@koa/router');
 const bodyParser = require('koa-bodyparser');
+const jsonQuery = require('json-query');
+const AJV = require('ajv');
+const fs = require('fs');
+// const res = require('express/lib/response');
 
 const app = new Koa();
 const router = new Router();
+const ajv = new AJV({ strict: false });
 
 async function getPlanOutput(body, url, token) {
 //  return 'failed';
@@ -17,49 +24,21 @@ async function getPlanOutput(body, url, token) {
       'Content-Type': 'application/json',
     },
   };
-  await axios
+  const planOutput = await axios
     .get(url, config)
     .then((res) => {
       console.log(`statusCode: ${res.status}`);
-      // const myArray = res.data.resource_changes;
-      const planArray = res.data;
-      //      console.log(planArray);
-      const queryResult = jsonQuery('resource_changes[type=bigip_as3].change', {
-        data: planArray,
-      }).value;
-      console.log('VALUE OF AS3 QUERY IS: ', queryResult);
-
-      if (queryResult == null) {
-        console.log('RETURNING FAILED RESPONSE');
-        return 'failed';
-      }
-      console.log('RETURNING PASSED RESPONSE');
-
-      return 'passed';
-      /*
-      terraform_result = jsonQuery('after.as3json', {
-        data: query_result,
-      });
-      console.log(terraform_result);
-
-      //       console.log(res.data)
-      //       console.log(res.data.format_version)
-      //       console.log(res.data.resource_changes[0])
-      console.log(res.data.resource_changes[0].change);
-
-      /*
-        for (let i=0; i < myarray.length; i++) {
-            console.log(myarray[i].type)
-        }
-*/
+      return res.data;
     })
     .catch((error) => {
-      console.error(error);
+      console.error('GOT AN AXIOS ERROR IN getPlanOutput', error);
     });
+  return planOutput;
 }
 
-async function postCallback(body, url, token, planStatus) {
-  console.log('PLAN RESULT', `${planStatus}`);
+async function postCallback(body, url, token, planStatus, message) {
+  console.log('PLAN STATUS IN CALLBACK FUNCTION', planStatus);
+  console.log('PlAN MESSAGE IN CALLBACK FUNCTION', message);
   const config = {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -70,8 +49,8 @@ async function postCallback(body, url, token, planStatus) {
     data: {
       type: 'task-results',
       attributes: {
-        status: `${planStatus}`,
-        message: 'Hello task',
+        status: 'passed',
+        message: `${message}`,
         url: 'http://runtasks.ngrok.io',
       },
     },
@@ -80,24 +59,46 @@ async function postCallback(body, url, token, planStatus) {
     .patch(url, payload, config)
     .then((res) => {
       console.log(`statusCode: ${res.status}`);
-      //    console.log(res);
+      return res.data;
     })
     .catch((error) => {
-      console.error(error);
+      console.error('GOT AN AXIOS ERROR IN postCallback', error);
     });
 }
 
-router.all('/', (ctx) => {
+function processAS3Payload(planOutput) {
+  console.log('IN PROCESSAS3 FUNCTION PLAN OUTPUT', planOutput);
+  const queryResult = jsonQuery('resource_changes[type=bigip_as3].change', {
+    data: planOutput,
+  }).value;
+  console.log('VALUE OF AS3 QUERY IS: ', queryResult);
+  const as3schema = fs.readFile('schemas/as3Schema.json', (error, data) => {
+    const valid = ajv.validate(queryResult);
+    console.log('RESULT FROM AJV IS: ', valid);
+  });
+  console.log('SCHEMA', as3schema);
+  return ['passsed', 'THIS MESSAGE IS FROM AS3 VALIDATOR\nCAN I HAVE MULTIPLE LINES?'];
+}
+
+router.all('/', async (ctx) => {
   const { body } = ctx.request;
+  let result;
+  let message;
   // console.log('This is the request body...', body);
   console.log('This is the plan output url...', body.plan_json_api_url);
   const planOutputURL = body.plan_json_api_url;
   const apiToken = body.access_token;
   const callbackURL = body.task_result_callback_url;
-  // logRequest(ctx);
-  const result = getPlanOutput(body, planOutputURL, apiToken);
-  console.log('THIS IS THE RESULT FROM PLAN OUTPUT...', result);
-  postCallback(body, callbackURL, apiToken, result);
+  console.log('REQUEST URL ', ctx.url);
+  // logRequest(ctx);()
+  const planOutput = await getPlanOutput(body, planOutputURL, apiToken);
+  console.log('FORMAT VERSION: ', planOutput.format_version);
+  console.log('THIS IS THE RESULT FROM PLAN OUTPUT...', planOutput);
+  if (ctx.url != null) {
+    [result, message] = processAS3Payload(planOutput);
+  }
+
+  postCallback(body, callbackURL, apiToken, result, message);
 
   ctx.status = 200;
   // console.log(ctx.response);
