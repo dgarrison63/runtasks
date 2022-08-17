@@ -110,7 +110,10 @@ router.all('/', (ctx) => {
 });
 
 app
-  .use(bodyParser)
+  .use(bodyParser())
   .use(router.routes())
   .use(router.allowedMethods())
-  .listen(8080);
+  .listen(8080, () => {
+    console.log('Run Task Receiver started on port 8080')
+  }
+);
