@@ -13,7 +13,6 @@ function logRequest(ctx) {
 }
 */
 
-// this is a comment
 
 async function getPlanOutput(body, url, token) {
   const config = {
