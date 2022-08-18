@@ -13,6 +13,8 @@ function logRequest(ctx) {
 }
 */
 
+// this is a comment
+
 async function getPlanOutput(body, url, token) {
   const config = {
     headers: {
@@ -92,7 +94,7 @@ async function postCallback(body, url, token, planStatus) {
 
 // app.use(bodyParser());
 
-router.all('/', (ctx) => {
+router.all('/as3', (ctx) => {
   const { body } = ctx.request;
   // console.log('This is the request body...', body);
   console.log('This is the plan output url...', body.plan_json_api_url);
